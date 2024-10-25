@@ -97,7 +97,7 @@ const registerUser = async (userData) => {
 
 // Register User
 app.post('/register', async (req, res) => {
-  var { username, password, email, userType } = req.body;
+  const { username, password, email, userType } = req.body;
 
   // password = bcrypt.hash(password, saltRounds)
 

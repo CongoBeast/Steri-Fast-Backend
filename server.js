@@ -18,12 +18,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*'); // Allows all origins
-  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS'); // Allowed methods
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Allowed headers
-  next();
-});
 
 
 const apiConfig = {
@@ -157,7 +151,77 @@ app.post('/login', (req, res) => {
 
 
 // Your existing routes go here
+app.post('/add-tools', (req, res) => {
+  const toolData = req.body;
+  if (!toolData._id) {
+    toolData._id = generateId();
+  }
 
+  const data = JSON.stringify({
+    "collection": "tools",
+    "database": "Steri-Fast",
+    "dataSource": "Cluster0",
+    "document": toolData
+  });
+
+  axios({ ...apiConfig, url: `${apiConfig.urlBase}insertOne`, data })
+    .then(response => {
+      res.json(response.data);
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      res.status(500).send(error);
+    });
+});
+
+app.get('/tools', (req, res) => {
+
+  // Prepare a simple aggregation pipeline to fetch all documents from "Tools" collection
+  const pipeline = [
+    { "$match": {} } // Fetch all documents; adjust conditions here if filtering is needed
+  ];
+
+  const data = JSON.stringify({
+    "collection": "tools",
+    "database": "Steri-Fast",
+    "dataSource": "Cluster0",
+    "pipeline": pipeline
+  });
+
+  axios({ ...apiConfig, url: `${apiConfig.urlBase}aggregate`, data })
+    .then(response => {
+      res.json(response.data.documents);
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      res.status(500).send(error);
+    });
+});
+
+
+// delete tools
+app.post('/delete-tool', (req, res) => {
+
+  const { _id } = req.body;
+
+  console.log(_id)
+
+  const data = JSON.stringify({
+    "collection": "tools",
+    "database": "Steri-Fast",
+    "dataSource": "Cluster0",
+    "filter": { "_id": _id }
+  });
+
+  axios({ ...apiConfig, url: `${apiConfig.urlBase}deleteOne`, data })
+    .then(response => {
+      res.json(response.data);
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      res.status(500).send(error);
+    });
+});
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

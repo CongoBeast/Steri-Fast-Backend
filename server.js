@@ -223,6 +223,87 @@ app.post('/delete-tool', (req, res) => {
     });
 });
 
+
+app.post('/create-request', (req, res) => {
+  const reqData = req.body;
+  if (!reqData._id) {
+    reqData._id = generateId();
+  }
+
+  const data = JSON.stringify({
+    "collection": "Package Requests",
+    "database": "Steri-Fast",
+    "dataSource": "Cluster0",
+    "document": reqData
+  });
+
+  axios({ ...apiConfig, url: `${apiConfig.urlBase}insertOne`, data })
+    .then(response => {
+      res.json(response.data);
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      res.status(500).send(error);
+    });
+});
+
+// app.get('/requests', (req, res) => {
+
+//   // Prepare a simple aggregation pipeline to fetch all documents from "Tools" collection
+//   const pipeline = [
+//     { "$match": {} } // Fetch all documents; adjust conditions here if filtering is needed
+//   ];
+
+//   const data = JSON.stringify({
+//     "collection": "Package Requests",
+//     "database": "Steri-Fast",
+//     "dataSource": "Cluster0",
+//     "pipeline": pipeline
+//   });
+
+//   axios({ ...apiConfig, url: `${apiConfig.urlBase}aggregate`, data })
+//     .then(response => {
+//       res.json(response.data.documents);
+//     })
+//     .catch(error => {
+//       console.error('Error:', error);
+//       res.status(500).send(error);
+//     });
+// });
+
+app.get('/requests', (req, res) => {
+
+  console.log(req.query)
+
+  const { username } = req.query; // Assuming the username is passed as a query parameter
+
+  // Prepare an aggregation pipeline to fetch documents based on the user's name
+  const pipeline = [
+    { 
+      "$match": { 
+        "requesterName": username // Match documents added by the specific user
+      } 
+    }
+  ];
+
+  const data = JSON.stringify({
+    "collection": "Package Requests",
+    "database": "Steri-Fast",
+    "dataSource": "Cluster0",
+    "pipeline": pipeline
+  });
+
+  axios({ ...apiConfig, url: `${apiConfig.urlBase}aggregate`, data })
+    .then(response => {
+      res.json(response.data.documents);
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      res.status(500).send(error);
+    });
+});
+
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

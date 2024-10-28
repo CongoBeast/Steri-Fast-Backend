@@ -204,7 +204,6 @@ app.post('/delete-tool', (req, res) => {
 
   const { _id } = req.body;
 
-  console.log(_id)
 
   const data = JSON.stringify({
     "collection": "tools",
@@ -302,6 +301,39 @@ app.get('/requests', (req, res) => {
       res.status(500).send(error);
     });
 });
+
+
+// users
+app.get('/get-users', (req, res) => {
+
+  console.log(req.query)
+
+  const { username } = req.query; // Assuming the username is passed as a query parameter
+
+  // Prepare an aggregation pipeline to fetch documents based on the user's name
+  const pipeline = [
+    { 
+      "$match": { } 
+    }
+  ];
+
+  const data = JSON.stringify({
+    "collection": "users",
+    "database": "Steri-Fast",
+    "dataSource": "Cluster0",
+    "pipeline": pipeline
+  });
+
+  axios({ ...apiConfig, url: `${apiConfig.urlBase}aggregate`, data })
+    .then(response => {
+      res.json(response.data.documents);
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      res.status(500).send(error);
+    });
+});
+
 
 
 app.listen(PORT, () => {

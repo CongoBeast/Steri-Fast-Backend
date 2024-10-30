@@ -222,7 +222,7 @@ app.post('/delete-tool', (req, res) => {
     });
 });
 
-
+// creating the user requests
 app.post('/create-request', (req, res) => {
   const reqData = req.body;
   if (!reqData._id) {
@@ -246,42 +246,110 @@ app.post('/create-request', (req, res) => {
     });
 });
 
-// app.get('/requests', (req, res) => {
-
-//   // Prepare a simple aggregation pipeline to fetch all documents from "Tools" collection
-//   const pipeline = [
-//     { "$match": {} } // Fetch all documents; adjust conditions here if filtering is needed
-//   ];
-
-//   const data = JSON.stringify({
-//     "collection": "Package Requests",
-//     "database": "Steri-Fast",
-//     "dataSource": "Cluster0",
-//     "pipeline": pipeline
-//   });
-
-//   axios({ ...apiConfig, url: `${apiConfig.urlBase}aggregate`, data })
-//     .then(response => {
-//       res.json(response.data.documents);
-//     })
-//     .catch(error => {
-//       console.error('Error:', error);
-//       res.status(500).send(error);
-//     });
-// });
-
 app.get('/requests', (req, res) => {
 
-  console.log(req.query)
+  const { requesterName } = req.query; 
 
-  const { username } = req.query; // Assuming the username is passed as a query parameter
-
-  // Prepare an aggregation pipeline to fetch documents based on the user's name
+  // Prepare an aggregation pipeline to fetch and sort documents based on the user's name and timestamp
   const pipeline = [
     { 
-      "$match": { 
-        "requesterName": username // Match documents added by the specific user
-      } 
+      "$match": { "requesterName": requesterName }  // Apply additional match criteria if necessary
+    },
+    { 
+      "$sort": { "requestDate": -1 }  // Sort by timestamp in descending order
+    }
+  ];
+
+  const data = JSON.stringify({
+    "collection": "Package Requests",
+    "database": "Steri-Fast",
+    "dataSource": "Cluster0",
+    "pipeline": pipeline
+  });
+
+  axios({ ...apiConfig, url: `${apiConfig.urlBase}aggregate`, data })
+    .then(response => {
+      res.json(response.data.documents);
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      res.status(500).send(error);
+    });
+});
+
+
+// gets all the requests
+app.get('/requests', (req, res) => {
+
+  const { requesterName } = req.query; 
+
+  // Prepare an aggregation pipeline to fetch and sort documents based on the user's name and timestamp
+  const pipeline = [
+    { 
+      "$match": { "requesterName": requesterName }  // Apply additional match criteria if necessary
+    },
+    { 
+      "$sort": { "requestDate": -1 }  // Sort by timestamp in descending order
+    }
+  ];
+
+  const data = JSON.stringify({
+    "collection": "Package Requests",
+    "database": "Steri-Fast",
+    "dataSource": "Cluster0",
+    "pipeline": pipeline
+  });
+
+  axios({ ...apiConfig, url: `${apiConfig.urlBase}aggregate`, data })
+    .then(response => {
+      res.json(response.data.documents);
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      res.status(500).send(error);
+    });
+});
+
+// edditing the user requests
+app.put('/requests/:id', (req, res) => {
+  const { id } = req.params;
+  const { requestStatus, criticalCode, lastModified, receiver } = req.body;
+
+  const updateData = JSON.stringify({
+    collection: 'Package Requests',
+    database: 'Steri-Fast',
+    dataSource: 'Cluster0',
+    filter: { _id: id  },
+    update: {
+      "$set": {
+        requestStatus,
+        criticalCode,
+        lastModified,
+        receiver,
+      }
+    },
+  });
+
+  axios({ ...apiConfig, url: `${apiConfig.urlBase}updateOne`, data: updateData })
+    .then(() => res.status(200).send("Request updated successfully"))
+    .catch((error) => {
+      console.error("Error updating request:", error);
+      res.status(500).send("Failed to update request.");
+    });
+});
+
+// get a users requests
+app.get('/user-requests/:requesterName', (req, res) => {
+
+  const { requesterName } = req.params; 
+
+  // Prepare an aggregation pipeline to fetch and sort documents based on the user's name and timestamp
+  const pipeline = [
+    { 
+      "$match": { "requesterName": requesterName }  // Apply additional match criteria if necessary
+    },
+    { 
+      "$sort": { "requestDate": -1 }  // Sort by timestamp in descending order
     }
   ];
 
@@ -306,7 +374,7 @@ app.get('/requests', (req, res) => {
 // users
 app.get('/get-users', (req, res) => {
 
-  console.log(req.query)
+  // console.log(req.query)
 
   const { username } = req.query; // Assuming the username is passed as a query parameter
 
@@ -319,6 +387,63 @@ app.get('/get-users', (req, res) => {
 
   const data = JSON.stringify({
     "collection": "users",
+    "database": "Steri-Fast",
+    "dataSource": "Cluster0",
+    "pipeline": pipeline
+  });
+
+  axios({ ...apiConfig, url: `${apiConfig.urlBase}aggregate`, data })
+    .then(response => {
+      res.json(response.data.documents);
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      res.status(500).send(error);
+    });
+});
+
+
+// create notifications
+app.post('/create-notification', (req, res) => {
+  const noteData = req.body;
+  if (!noteData._id) {
+    noteData._id = generateId();
+  }
+
+  const data = JSON.stringify({
+    "collection": "Notifications",
+    "database": "Steri-Fast",
+    "dataSource": "Cluster0",
+    "document": noteData
+  });
+
+  axios({ ...apiConfig, url: `${apiConfig.urlBase}insertOne`, data })
+    .then(response => {
+      res.json(response.data);
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      res.status(500).send(error);
+    });
+});
+
+
+// get notifications
+app.get('/notifications', (req, res) => {
+
+  const { userId } = req.query; // Assuming the username is passed as a query parameter
+
+  const pipeline = [
+    { 
+      "$match": { userId: userId } // Match documents with the userId from the query
+    },
+    { 
+      "$sort": { timestamp: -1 } // Sort by timestamp in descending order (latest first)
+    }
+  ];
+
+  const data = JSON.stringify({
+    "collection": "Notifications",
     "database": "Steri-Fast",
     "dataSource": "Cluster0",
     "pipeline": pipeline

@@ -402,6 +402,37 @@ app.get('/get-users', (req, res) => {
     });
 });
 
+// get user details after login
+app.get('/get-user-login', (req, res) => {
+
+  // console.log(req.query)
+
+  const { username } = req.query; 
+
+  // Prepare an aggregation pipeline to fetch documents based on the user's name
+  const pipeline = [
+    { 
+      "$match": { username: username   } 
+    }
+  ];
+
+  const data = JSON.stringify({
+    "collection": "users",
+    "database": "Steri-Fast",
+    "dataSource": "Cluster0",
+    "pipeline": pipeline
+  });
+
+  axios({ ...apiConfig, url: `${apiConfig.urlBase}aggregate`, data })
+    .then(response => {
+      res.json(response.data.documents);
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      res.status(500).send(error);
+    });
+});
+
 // delete users
 app.post('/delete-user', (req, res) => {
 
@@ -481,6 +512,67 @@ app.get('/notifications', (req, res) => {
       res.status(500).send(error);
     });
 });
+
+
+
+// Sample data options for randomization
+const possibleNames = ["Mark Otto", "Jacob Thornton", "Larry Bird", "John Doe", "Jane Smith"];
+const possibleTools = [
+  ["Scalpel", "Suture Kit"],
+  ["Forceps", "Scissors"],
+  ["Retractor", "Gauze", "Tweezers"],
+  ["Scalpel", "Forceps", "Suture Kit"],
+  ["Needle Holder", "Bandage", "Clamps"]
+];
+const possibleStatuses = ["Pending", "Approved", "Delivered", "In Progress"];
+const possibleRooms = ["101", "102", "103", "104", "105"];
+
+// Function to generate a random package document
+const generateRandomPackage = () => {
+  const packageId = `PKG${Math.floor(10000 + Math.random() * 90000)}`;
+  const requesterName = possibleNames[Math.floor(Math.random() * possibleNames.length)];
+  const surgicalTools = possibleTools[Math.floor(Math.random() * possibleTools.length)];
+  const status = possibleStatuses[Math.floor(Math.random() * possibleStatuses.length)];
+  const room = possibleRooms[Math.floor(Math.random() * possibleRooms.length)];
+  const requestedAt = new Date().toISOString();
+
+  return {
+    packageId,
+    requesterName,
+    surgicalTools,
+    status,
+    room,
+    requestedAt,
+  };
+};
+
+// Function to insert an  unsterilized package into the database
+const insertPackageIntoDB = async (packageData) => {
+  const data = JSON.stringify({
+    collection: "Unsterilized Packages",
+    database: "Steri-Fast",
+    dataSource: "Cluster0",
+    document: packageData,
+  });
+
+  try {
+    // const response = await axios({ ...apiConfig, data });
+    const response = await axios({ ...apiConfig, url: `${apiConfig.urlBase}insertOne`, data })
+    console.log("Inserted unsterilized package:", response.data);
+  } catch (error) {
+    console.error("Error inserting package:", error);
+  }
+};
+
+// Generate and insert a new package every 10 minutes
+setInterval(() => {
+  const newPackage = generateRandomPackage();
+  insertPackageIntoDB(newPackage);
+}, 3000); // 10 minutes in milliseconds
+
+
+// get the unsterilized packages
+
 
 
 

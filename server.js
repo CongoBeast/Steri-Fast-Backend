@@ -565,13 +565,40 @@ const insertPackageIntoDB = async (packageData) => {
 };
 
 // Generate and insert a new package every 10 minutes
-setInterval(() => {
-  const newPackage = generateRandomPackage();
-  insertPackageIntoDB(newPackage);
-}, 3000); // 10 minutes in milliseconds
+// setInterval(() => {
+//   const newPackage = generateRandomPackage();
+//   insertPackageIntoDB(newPackage);
+// }, 60000); // 10 minutes in milliseconds
 
 
 // get the unsterilized packages
+app.get('/unsterilized-packages', (req, res) => {
+
+  const pipeline = [
+    { 
+      "$match": {  } // Match documents with the userId from the query
+    },
+    { 
+      "$sort": { timestamp: -1 } // Sort by timestamp in descending order (latest first)
+    }
+  ];
+
+  const data = JSON.stringify({
+    "collection": "Unsterilized Packages",
+    "database": "Steri-Fast",
+    "dataSource": "Cluster0",
+    "pipeline": pipeline
+  });
+
+  axios({ ...apiConfig, url: `${apiConfig.urlBase}aggregate`, data })
+    .then(response => {
+      res.json(response.data.documents);
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      res.status(500).send(error);
+    });
+});
 
 
 
